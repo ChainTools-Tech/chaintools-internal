@@ -29,7 +29,7 @@ In case of any questions contact support@chaintools.tech
 
 ## Expample execution
 ```bash
-./sync_deploy.sh -c bitsong -g -o bitsong -i /home/bitsong
+root@server # ./sync_deploy.sh -c bitsong -g -o bitsong -i /home/bitsong
 +----------------------------------------------------------------------------------------------------------------+
 |    ____ _           _     _____           _                       _        _           _        _ _            |
 |   / ___| |__   __ _(_)_ _|_   _|__   ___ | |___   _ __   ___   __| | ___  (_)_ __  ___| |_ __ _| | | ___ _ __  |
