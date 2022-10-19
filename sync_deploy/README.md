@@ -92,3 +92,10 @@ RPC Server 2: https://rpc.bitsong.chaintools.tech:443
 Block offset: 2000
 Statesync params: 8252321 8250321 729ED398096587054C1393A484DD17B16EEDA89F02DE27A5E3C108CF2DFF285A
 ```
+
+
+ToDo
+- [ ] pre-flight : user check/creation
+- [ ] pre-flight : check required tools
+- [ ] deployment : prunning settings added to config and applied to app.toml
+- [ ] deployment : state-sync condifuration as an option (that will make script able to deploy full node with snapshot)
