@@ -94,7 +94,7 @@ Statesync params: 8252321 8250321 729ED398096587054C1393A484DD17B16EEDA89F02DE27
 ```
 
 
-ToDo
+## ToDo
 - [ ] pre-flight : user check/creation
 - [ ] pre-flight : check required tools
 - [ ] deployment : prunning settings added to config and applied to app.toml
