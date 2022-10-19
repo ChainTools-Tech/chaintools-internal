@@ -28,6 +28,7 @@ In case of any questions contact support@chaintools.tech
 
 
 ## Expample execution
+![Alt text](sync_deploy.png "sync_deploy screenshot")
 ```bash
 root@server # ./sync_deploy.sh -c bitsong -g -o bitsong -i /home/bitsong
 +----------------------------------------------------------------------------------------------------------------+
