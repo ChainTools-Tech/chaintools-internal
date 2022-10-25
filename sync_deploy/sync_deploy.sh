@@ -50,14 +50,17 @@ function initialize_deployment() {
 		rm -rf ${DEST_DIR}/cosmos-sdk
 	fi
 
+	GOROOT_ORIG=${GOROOT}
 	GOPATH_ORIG=${GOPATH}
 	GOBIN_ORIG=${GOBIN}
 	GOCACHE_ORIG=${GOCACHE}
+	PATH_ORIG=${PATH}
 	
+	export ${GOROOT}=/usr/local/go
 	export GOPATH=${DEST_DIR}/go
 	export GOBIN=${DEST_DIR}/go/bin
 	export GOCACHE=${DEST_DIR}/.cache/go-build
-
+	export PATH=${PATH}:${GOROOT}/bin:${GOBIN}
 }
 
 
@@ -103,7 +106,7 @@ function build_cosmovisor() {
 	cd ${DEST_DIR}
 	echo -e "${BLUE}-- Cloning Cosmovisor repo.${NC}"
 	git clone https://github.com/cosmos/cosmos-sdk &> /dev/null
-	cd ${DEST_DIR}/cosmos-sdk/cosmovisor/ &> /dev/null
+	cd ${DEST_DIR}/cosmos-sdk/tools/cosmovisor/ &> /dev/null
 	echo -e "${BLUE}-- Building Cosmovisor."
 	make cosmovisor &> /dev/null
 	echo -e "${BLUE}-- Installing Cosmovisor binaries.${NC}"
@@ -186,6 +189,8 @@ function finalize_deployment() {
 	export GOPATH=${GOPATH_ORIG}
 	export GOBIN=${GOBIN_ORIG}
 	export GOCACHE=${GOCACHE_ORIG}
+	export GOROOT=${GOROOT_ORIG}
+	export PATH=${PATH_ORIG}
 }
 
 
