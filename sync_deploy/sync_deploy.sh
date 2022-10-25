@@ -176,7 +176,7 @@ function generate_service_file() {
 # Changes ownership of files in destination folder
 function set_file_ownership() {
     echo -e "${GREEN}Setting foler/file ownership.${NC}"
-    chown -R ${FOLDER_OWNER}:${FOLDER_OWNER} ${DEST_DIR}
+    chown -R -H ${FOLDER_OWNER}:${FOLDER_OWNER} ${DEST_DIR}
 }
 
 
