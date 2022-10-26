@@ -111,7 +111,7 @@ function build_cosmovisor() {
 	make cosmovisor &> /dev/null
 	echo -e "${BLUE}-- Installing Cosmovisor binaries.${NC}"
 	mkdir -p ${DEST_DIR}/.local/bin &> /dev/null
-	cp ${DEST_DIR}/cosmos-sdk/cosmovisor/cosmovisor ${DEST_DIR}/.local/bin &> /dev/null
+	cp ${DEST_DIR}/cosmos-sdk/tools/cosmovisor/cosmovisor ${DEST_DIR}/.local/bin &> /dev/null
 }
 
 
