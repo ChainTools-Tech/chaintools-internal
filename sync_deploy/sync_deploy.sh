@@ -56,7 +56,7 @@ function initialize_deployment() {
 	GOCACHE_ORIG=${GOCACHE}
 	PATH_ORIG=${PATH}
 	
-	export ${GOROOT}=/usr/local/go
+	export GOROOT=/usr/local/go
 	export GOPATH=${DEST_DIR}/go
 	export GOBIN=${DEST_DIR}/go/bin
 	export GOCACHE=${DEST_DIR}/.cache/go-build
