@@ -1,0 +1,167 @@
+EVMOS main | v9.1.0 | move to pebbledb | STATE-SYNC
+
+dependencies
+
+cd $HOME
+ver="1.18.8"
+wget "https://golang.org/dl/go$ver.linux-amd64.tar.gz"
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf "go$ver.linux-amd64.tar.gz"
+rm "go$ver.linux-amd64.tar.gz"
+echo "export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin" >> $HOME/.bash_profile
+source $HOME/.bash_profile
+go version
+
+build with pebbledb
+
+cd $HOME
+git clone https://github.com/evmos/evmos
+cd evmos
+git reset --hard
+git checkout v9.1.0
+# pebbledb
+go mod edit -replace github.com/tendermint/tm-db=github.com/notional-labs/tm-db@136c7b6
+go mod tidy
+go install -ldflags '-w -s -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb' -tags pebbledb ./...
+
+init
+
+EVMOS_HOME="$HOME/.evmosd"
+echo "export EVMOS_HOME=${EVMOS_HOME}" >> $HOME/.bash_profile
+source $HOME/.bash_profile
+
+evmosd init node --chain-id evmos_9001-2 --home $EVMOS_HOME
+
+# genesis
+wget "https://archive.evmos.org/mainnet/genesis.json"
+mv genesis.json $EVMOS_HOME/config/
+
+config
+
+evmosd config chain-id evmos_9001-2 --home $EVMOS_HOME
+
+# seeds and peers
+seeds="9aa8a73ea9364aa3cf7806d4dd25b6aed88d8152@evmos.seed.mzonder.com:10156"
+sed -i "s/^seeds *=.*/seeds = \"$seeds\"/" $EVMOS_HOME/config/config.toml
+
+peers=""
+sed -i "s/^persistent_peers *=.*/persistent_peers = \"$peers\"/" $EVMOS_HOME/config/config.toml
+
+# indexing off
+indexer="null"
+sed -i "s/^indexer *=.*/indexer = \"$indexer\"/" $EVMOS_HOME/config/config.toml
+
+# min-gas
+min_gas_price="250000000aevmos"
+sed -i "s/^minimum-gas-prices *=.*/minimum-gas-prices = \"$min_gas_price\"/" $EVMOS_HOME/config/app.toml
+
+# prunning
+pruning="custom"
+pruning_keep_recent="100000"
+pruning_keep_every="0"
+pruning_interval="10"
+
+sed -i "s/^pruning *=.*/pruning = \"$pruning\"/" $EVMOS_HOME/config/app.toml
+sed -i "s/^pruning-keep-recent *=.*/pruning-keep-recent = \"$pruning_keep_recent\"/" $EVMOS_HOME/config/app.toml
+sed -i "s/^pruning-keep-every *=.*/pruning-keep-every = \"$pruning_keep_every\"/" $EVMOS_HOME/config/app.toml
+sed -i "s/^pruning-interval *=.*/pruning-interval = \"$pruning_interval\"/" $EVMOS_HOME/config/app.toml
+
+# enable snapshots
+sed -i 's/snapshot-interval *=.*/snapshot-interval = 5000/' $EVMOS_HOME/config/app.toml
+
+
+config ports here
+
+service
+
+tee $HOME/evmosd.service > /dev/null <<EOF
+[Unit]
+Description=Evmos
+After=network.target
+[Service]
+Type=simple
+User=$USER
+ExecStart=$(which evmosd) start --x-crisis-skip-assert-invariants --db_backend pebbledb --home $EVMOS_HOME
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo mv $HOME/evmosd.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable evmosd
+
+
+start from state-sync
+
+# start from state-sync
+
+SNAP_RPC="https://rpc-evmos.mzonder.com:443"
+
+LATEST_HEIGHT=$(curl -s $SNAP_RPC/block | jq -r .result.block.header.height); \
+BLOCK_HEIGHT=$((LATEST_HEIGHT - 2000)); \
+TRUST_HASH=$(curl -s "$SNAP_RPC/block?height=$BLOCK_HEIGHT" | jq -r .result.block_id.hash)
+
+echo $LATEST_HEIGHT $BLOCK_HEIGHT $TRUST_HASH
+
+sudo systemctl stop evmosd && evmosd tendermint unsafe-reset-all --home $EVMOS_HOME
+
+sed -i.bak -E "s|^(enable[[:space:]]+=[[:space:]]+).*$|\1true| ; \
+s|^(rpc_servers[[:space:]]+=[[:space:]]+).*$|\1\"$SNAP_RPC,$SNAP_RPC\"| ; \
+s|^(trust_height[[:space:]]+=[[:space:]]+).*$|\1$BLOCK_HEIGHT| ; \
+s|^(trust_hash[[:space:]]+=[[:space:]]+).*$|\1\"$TRUST_HASH\"|" $EVMOS_HOME/config/config.toml
+
+sudo systemctl start evmosd && journalctl -u evmosd -f -o cat
+
+UPGRADE WORKAROUND
+
+Example of Governance upgrade on pebbledb from v8.2.3 to 9.1.0
+
+# After Consesnus failure, UPGRADE xxxx NEED at height
+sudo systemctl stop evmosd && journalctl -u evmosd -f -o cat
+
+# step1 - start old version with ForceSync=1
+cd $HOME/evmos
+git reset --hard
+git pull
+git checkout v8.2.3
+# pebbledb
+go mod edit -replace github.com/tendermint/tm-db=github.com/baabeetaa/tm-db@pebble
+go mod tidy
+go install -ldflags '-w -s -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb -X github.com/tendermint/tm-db.ForceSync=1' -tags pebbledb ./...
+
+sudo systemctl start evmosd && journalctl -u evmosd -f -o cat
+
+# after panic
+
+sudo systemctl stop evmosd && journalctl -u evmosd -f -o cat
+
+# step 2 - start new version as usual
+cd $HOME/evmos
+git reset --hard
+git pull
+git checkout v9.1.0
+# pebbledb
+go mod edit -replace github.com/tendermint/tm-db=github.com/notional-labs/tm-db@136c7b6 # start again with commit 136c7b6
+go mod tidy
+go install -ldflags '-w -s -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb' -tags pebbledb ./...
+
+sudo systemctl start evmosd && journalctl -u evmosd -f -o cat
+
+
+Pebble Update Workaround
+
+"Just like goleveldb, go-sqlite; PebbleDB is RocksDB in golang to avoid CGO overhead.
+
+After migrating 40 chains from goleveldb to pebbledb, performance is about the same to goleveldb but disk io is very much lower. ( Why diskio matters? I see bottleneck of the chain is iavl, and bottleneck of iavl is diskio )
+
+However, there is an issue when upgrading chain (BINARY UPDATED BEFORE TRIGGER!). This is not a database issue but bugs of the sdk. At the upgrade-block, the sdk will panic without flushing data to disk or closing dbs properly.
+
+Workaround:
+
+After seeing UPGRADE xxxx NEED at height...., restart current version with -X github.com/tendermint/tm-db.ForceSync=1
+Restart new version as normal"
+
+
