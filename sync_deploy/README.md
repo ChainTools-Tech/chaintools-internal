@@ -35,4 +35,4 @@ In case of any questions contact support@chaintools.tech
 - [ ] pre-flight : user check/creation
 - [ ] pre-flight : check required tools and install if missing (jq, build-essential)
 - [ ] deployment : prunning settings added to config and applied to app.toml
-- [ ] deployment : state-sync condifuration as an option (that will make script able to deploy full node with snapshot)
+- [ ] deployment : state-sync configuration as an option (that will make script able to deploy full node with snapshot)
